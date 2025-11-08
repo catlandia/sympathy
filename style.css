@@ -1,0 +1,220 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    padding: 20px;
+    color: #333;
+}
+
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+header {
+    text-align: center;
+    color: white;
+    margin-bottom: 30px;
+}
+
+header h1 {
+    font-size: 2.5em;
+    margin-bottom: 10px;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+}
+
+header p {
+    font-size: 1.2em;
+    opacity: 0.9;
+}
+
+.main-content {
+    display: grid;
+    grid-template-columns: 1fr 350px;
+    gap: 20px;
+}
+
+.canvas-container {
+    position: relative;
+    background: white;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+}
+
+#simulationCanvas {
+    display: block;
+    border: 2px solid #ddd;
+    border-radius: 5px;
+    background: #f9f9f9;
+    cursor: crosshair;
+}
+
+.stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.stat-item {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 10px;
+    border-radius: 5px;
+    text-align: center;
+    color: white;
+}
+
+.stat-label {
+    display: block;
+    font-size: 0.9em;
+    opacity: 0.9;
+}
+
+.stat-item span:last-child {
+    display: block;
+    font-size: 1.5em;
+    font-weight: bold;
+    margin-top: 5px;
+}
+
+.controls-panel {
+    background: white;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    max-height: 800px;
+    overflow-y: auto;
+}
+
+.control-section {
+    margin-bottom: 25px;
+    padding-bottom: 20px;
+    border-bottom: 2px solid #f0f0f0;
+}
+
+.control-section:last-child {
+    border-bottom: none;
+}
+
+.control-section h3 {
+    color: #667eea;
+    margin-bottom: 15px;
+    font-size: 1.2em;
+}
+
+.btn {
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 10px;
+    border: none;
+    border-radius: 5px;
+    font-size: 1em;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-weight: 600;
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+
+.btn-primary {
+    background: #4CAF50;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #45a049;
+}
+
+.btn-secondary {
+    background: #2196F3;
+    color: white;
+}
+
+.btn-secondary:hover {
+    background: #0b7dda;
+}
+
+.btn-danger {
+    background: #F44336;
+    color: white;
+}
+
+.btn-danger:hover {
+    background: #da190b;
+}
+
+.btn-add {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.btn-add:hover {
+    background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+}
+
+label {
+    display: block;
+    margin-bottom: 12px;
+    color: #555;
+    font-size: 0.95em;
+}
+
+input[type="range"] {
+    width: 100%;
+    margin-top: 8px;
+}
+
+input[type="checkbox"] {
+    margin-right: 8px;
+}
+
+#speedValue {
+    font-weight: bold;
+    color: #667eea;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+    font-size: 0.9em;
+}
+
+.legend-color {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    margin-right: 10px;
+    border: 2px solid #ddd;
+}
+
+.instructions {
+    list-style-position: inside;
+    color: #666;
+    font-size: 0.9em;
+    line-height: 1.6;
+}
+
+.instructions li {
+    margin-bottom: 8px;
+}
+
+@media (max-width: 1024px) {
+    .main-content {
+        grid-template-columns: 1fr;
+    }
+
+    .controls-panel {
+        max-height: none;
+    }
+}
