@@ -22,6 +22,10 @@
                         <span id="cellCount">0</span>
                     </div>
                     <div class="stat-item">
+                        <span class="stat-label">Organisms:</span>
+                        <span id="organismCount">0</span>
+                    </div>
+                    <div class="stat-item">
                         <span class="stat-label">Plants:</span>
                         <span id="plantCount">0</span>
                     </div>
@@ -57,7 +61,11 @@
                     <h3>Settings</h3>
                     <label>
                         Simulation Speed: <span id="speedValue">1.0</span>x
-                        <input type="range" id="speedSlider" min="0.1" max="3" step="0.1" value="1">
+                        <input type="range" id="speedSlider" min="0.1" max="27" step="0.1" value="1">
+                    </label>
+                    <label>
+                        Combination Chance: <span id="combineChanceValue">10</span>%
+                        <input type="range" id="combineChanceSlider" min="1" max="100" step="1" value="10">
                     </label>
                     <label>
                         <input type="checkbox" id="showEnergy" checked>
@@ -84,6 +92,10 @@
                         <span>Predator Cell - Hunts others</span>
                     </div>
                     <div class="legend-item">
+                        <div class="legend-color" style="background: linear-gradient(135deg, #4CAF50, #81C784);"></div>
+                        <span>Organism - Combined cells (larger)</span>
+                    </div>
+                    <div class="legend-item">
                         <div class="legend-color" style="background: #8BC34A;"></div>
                         <span>Plant - Grows upward</span>
                     </div>
@@ -98,6 +110,8 @@
                     <ul class="instructions">
                         <li>Click canvas to add entities at that location</li>
                         <li>Cells consume energy and may reproduce</li>
+                        <li>Same-type cells can combine into organisms</li>
+                        <li>Organisms are larger and stronger</li>
                         <li>Plants and trees grow over time</li>
                         <li>Predators hunt other cells</li>
                         <li>Photo cells move toward light sources</li>

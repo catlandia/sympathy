@@ -10,6 +10,7 @@ class Simulation {
         this.canvas.height = this.height;
 
         this.cells = [];
+        this.organisms = [];
         this.plants = [];
         this.trees = [];
         this.particles = [];
@@ -22,6 +23,7 @@ class Simulation {
         this.lastFpsUpdate = performance.now();
 
         this.simulationSpeed = 1.0;
+        this.combinationChance = 0.1; // 10% chance
         this.showEnergy = true;
         this.showTrails = false;
         this.selectedEntity = null;
@@ -118,8 +120,32 @@ class Simulation {
             cell.y = Math.max(cell.radius, Math.min(this.height - cell.radius, cell.y));
         }
 
-        // Handle cell collisions
+        // Handle cell collisions and combinations
         this.handleCollisions();
+
+        // Update organisms
+        for (let i = this.organisms.length - 1; i >= 0; i--) {
+            const organism = this.organisms[i];
+            organism.update(dt, this);
+
+            // Remove dead organisms
+            if (organism.energy <= 0) {
+                this.organisms.splice(i, 1);
+                continue;
+            }
+
+            // Handle reproduction
+            if (organism.shouldReproduce()) {
+                const offspring = organism.reproduce();
+                if (offspring) {
+                    this.organisms.push(offspring);
+                }
+            }
+
+            // Keep organisms in bounds
+            organism.x = Math.max(organism.radius, Math.min(this.width - organism.radius, organism.x));
+            organism.y = Math.max(organism.radius, Math.min(this.height - organism.radius, organism.y));
+        }
 
         // Update plants
         for (let i = this.plants.length - 1; i >= 0; i--) {
@@ -151,8 +177,14 @@ class Simulation {
     }
 
     handleCollisions() {
+        const cellsToRemove = new Set();
+
         for (let i = 0; i < this.cells.length; i++) {
+            if (cellsToRemove.has(i)) continue;
+
             for (let j = i + 1; j < this.cells.length; j++) {
+                if (cellsToRemove.has(j)) continue;
+
                 const cellA = this.cells[i];
                 const cellB = this.cells[j];
 
@@ -162,8 +194,50 @@ class Simulation {
                 const minDist = cellA.radius + cellB.radius;
 
                 if (distance < minDist) {
-                    cellA.handleCollision(cellB, this);
+                    // Check if cells can combine (same type, not predator eating prey)
+                    if (cellA.type === cellB.type &&
+                        cellA.type !== 'predator' &&
+                        !cellA.isOrganism &&
+                        !cellB.isOrganism &&
+                        Math.random() < this.combinationChance) {
+
+                        // Combine cells into organism
+                        const organism = new Organism(
+                            (cellA.x + cellB.x) / 2,
+                            (cellA.y + cellB.y) / 2,
+                            cellA.type,
+                            2 // Starting with 2 cells
+                        );
+
+                        // Transfer combined energy
+                        organism.energy = cellA.energy + cellB.energy;
+                        organism.vx = (cellA.vx + cellB.vx) / 2;
+                        organism.vy = (cellA.vy + cellB.vy) / 2;
+
+                        this.organisms.push(organism);
+
+                        // Mark cells for removal
+                        cellsToRemove.add(i);
+                        cellsToRemove.add(j);
+
+                        // Create combination particles
+                        for (let k = 0; k < 10; k++) {
+                            this.addParticle(organism.x, organism.y, cellA.color);
+                        }
+
+                        break;
+                    } else {
+                        // Normal collision
+                        cellA.handleCollision(cellB, this);
+                    }
                 }
+            }
+        }
+
+        // Remove combined cells
+        for (let i = this.cells.length - 1; i >= 0; i--) {
+            if (cellsToRemove.has(i)) {
+                this.cells.splice(i, 1);
             }
         }
     }
@@ -211,6 +285,9 @@ class Simulation {
         // Draw cells
         this.cells.forEach(cell => cell.render(this.ctx, this.showEnergy));
 
+        // Draw organisms
+        this.organisms.forEach(organism => organism.render(this.ctx, this.showEnergy));
+
         // Draw particles
         this.particles.forEach(particle => particle.render(this.ctx));
 
@@ -230,6 +307,7 @@ class Simulation {
 
     reset() {
         this.cells = [];
+        this.organisms = [];
         this.plants = [];
         this.trees = [];
         this.particles = [];
@@ -239,6 +317,7 @@ class Simulation {
 
     clear() {
         this.cells = [];
+        this.organisms = [];
         this.plants = [];
         this.trees = [];
         this.particles = [];
@@ -261,6 +340,7 @@ class Cell {
         this.vy = 0;
         this.age = 0;
         this.reproductionCooldown = 0;
+        this.isOrganism = false;
     }
 
     update(dt, sim) {
@@ -746,6 +826,306 @@ class Tree {
     }
 }
 
+// ==================== ORGANISM ====================
+
+class Organism {
+    constructor(x, y, cellType, cellCount) {
+        this.x = x;
+        this.y = y;
+        this.cellType = cellType;
+        this.cellCount = cellCount;
+        this.isOrganism = true;
+        this.type = cellType; // For compatibility with collision detection
+
+        // Size based on cell count
+        this.radius = 8 + cellCount * 4;
+
+        // Energy and properties scale with cell count
+        this.energy = 100 * cellCount;
+        this.maxEnergy = 100 * cellCount;
+        this.speed = cellType === 'predator' ? 2 : cellType === 'photosynthetic' ? 1 : 1.5;
+        this.vx = 0;
+        this.vy = 0;
+        this.age = 0;
+        this.reproductionCooldown = 0;
+
+        // Color based on cell type
+        this.baseColor = cellType === 'wandering' ? '#4CAF50' :
+                         cellType === 'photosynthetic' ? '#2196F3' :
+                         cellType === 'predator' ? '#F44336' : '#4CAF50';
+
+        // Organism-specific properties
+        this.changeDirectionTimer = 0;
+        this.huntingRange = 150;
+    }
+
+    update(dt, sim) {
+        this.age += dt;
+        this.energy -= 0.05 * this.cellCount * dt;
+        this.reproductionCooldown = Math.max(0, this.reproductionCooldown - dt);
+
+        // Behavior based on cell type
+        if (this.cellType === 'wandering') {
+            this.updateWandering(dt);
+        } else if (this.cellType === 'photosynthetic') {
+            this.updatePhotosynthetic(dt, sim);
+        } else if (this.cellType === 'predator') {
+            this.updatePredator(dt, sim);
+        }
+
+        // Apply velocity
+        this.x += this.vx * dt;
+        this.y += this.vy * dt;
+
+        // Add some friction
+        this.vx *= 0.98;
+        this.vy *= 0.98;
+    }
+
+    updateWandering(dt) {
+        this.changeDirectionTimer -= dt;
+        if (this.changeDirectionTimer <= 0) {
+            const angle = Math.random() * Math.PI * 2;
+            this.vx = Math.cos(angle) * this.speed;
+            this.vy = Math.sin(angle) * this.speed;
+            this.changeDirectionTimer = 2 + Math.random() * 3;
+        }
+
+        // Gain a bit of energy from the environment
+        this.energy += 0.02 * this.cellCount * dt;
+        this.energy = Math.min(this.energy, this.maxEnergy);
+    }
+
+    updatePhotosynthetic(dt, sim) {
+        // Move toward light
+        if (sim.lightSources.length > 0) {
+            const light = sim.lightSources[0];
+            const dx = light.x - this.x;
+            const dy = light.y - this.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+
+            if (distance > 50) {
+                this.vx += (dx / distance) * this.speed * 0.1;
+                this.vy += (dy / distance) * this.speed * 0.1;
+            }
+
+            // Gain energy from light (more with more cells)
+            if (distance < light.intensity) {
+                const lightEnergy = (1 - distance / light.intensity) * 0.2 * this.cellCount;
+                this.energy += lightEnergy * dt;
+                this.energy = Math.min(this.energy, this.maxEnergy);
+            }
+        }
+    }
+
+    updatePredator(dt, sim) {
+        // Hunt for prey (cells and smaller organisms)
+        let closestPrey = null;
+        let closestDistance = this.huntingRange;
+
+        // Look for cells
+        sim.cells.forEach(cell => {
+            if (cell.type !== 'predator') {
+                const dx = cell.x - this.x;
+                const dy = cell.y - this.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+
+                if (distance < closestDistance) {
+                    closestDistance = distance;
+                    closestPrey = cell;
+                }
+            }
+        });
+
+        // Look for smaller organisms
+        sim.organisms.forEach(organism => {
+            if (organism !== this && organism.cellCount < this.cellCount) {
+                const dx = organism.x - this.x;
+                const dy = organism.y - this.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+
+                if (distance < closestDistance) {
+                    closestDistance = distance;
+                    closestPrey = organism;
+                }
+            }
+        });
+
+        if (closestPrey) {
+            const dx = closestPrey.x - this.x;
+            const dy = closestPrey.y - this.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+
+            this.vx += (dx / distance) * this.speed * 0.15;
+            this.vy += (dy / distance) * this.speed * 0.15;
+
+            // Consume if close enough
+            if (distance < this.radius + closestPrey.radius) {
+                const energyGain = closestPrey.energy * 0.5;
+                this.energy += energyGain;
+                this.energy = Math.min(this.energy, this.maxEnergy);
+                closestPrey.energy -= energyGain * 2;
+            }
+        } else {
+            // Wander if no prey
+            if (Math.random() < 0.02) {
+                const angle = Math.random() * Math.PI * 2;
+                this.vx += Math.cos(angle) * this.speed * 0.1;
+                this.vy += Math.sin(angle) * this.speed * 0.1;
+            }
+        }
+
+        // Lose energy faster
+        this.energy -= 0.05 * this.cellCount * dt;
+    }
+
+    shouldReproduce() {
+        return this.energy > this.maxEnergy * 0.8 &&
+               this.age > 8 &&
+               this.reproductionCooldown <= 0;
+    }
+
+    reproduce() {
+        this.energy -= this.maxEnergy * 0.4;
+        this.reproductionCooldown = 15;
+
+        // Create a new organism with same cell count
+        const offspring = new Organism(
+            this.x + (Math.random() - 0.5) * 30,
+            this.y + (Math.random() - 0.5) * 30,
+            this.cellType,
+            this.cellCount
+        );
+
+        return offspring;
+    }
+
+    render(ctx, showEnergy) {
+        // Draw outer membrane
+        const gradient = ctx.createRadialGradient(
+            this.x, this.y, 0,
+            this.x, this.y, this.radius
+        );
+        gradient.addColorStop(0, this.baseColor);
+        gradient.addColorStop(0.7, this.baseColor);
+        gradient.addColorStop(1, 'rgba(255,255,255,0.3)');
+
+        ctx.fillStyle = gradient;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Draw outline
+        ctx.strokeStyle = 'rgba(0,0,0,0.4)';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+
+        // Draw individual cells within organism
+        const cellPositions = this.getCellPositions();
+        cellPositions.forEach((pos, index) => {
+            ctx.fillStyle = 'rgba(255,255,255,0.4)';
+            ctx.beginPath();
+            ctx.arc(pos.x, pos.y, 6, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Draw mini nucleus
+            ctx.fillStyle = 'rgba(0,0,0,0.3)';
+            ctx.beginPath();
+            ctx.arc(pos.x, pos.y, 2.5, 0, Math.PI * 2);
+            ctx.fill();
+        });
+
+        // Draw cell count badge
+        ctx.fillStyle = 'rgba(0,0,0,0.6)';
+        ctx.beginPath();
+        ctx.arc(this.x + this.radius * 0.6, this.y - this.radius * 0.6, 8, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = 'white';
+        ctx.font = 'bold 10px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(this.cellCount, this.x + this.radius * 0.6, this.y - this.radius * 0.6);
+
+        // Draw energy bar
+        if (showEnergy) {
+            const barWidth = this.radius * 2;
+            const barHeight = 4;
+            const barX = this.x - barWidth / 2;
+            const barY = this.y - this.radius - 12;
+
+            ctx.fillStyle = 'rgba(0,0,0,0.3)';
+            ctx.fillRect(barX, barY, barWidth, barHeight);
+
+            const energyPercent = this.energy / this.maxEnergy;
+            const energyColor = energyPercent > 0.5 ? '#4CAF50' :
+                                energyPercent > 0.25 ? '#FFC107' : '#F44336';
+
+            ctx.fillStyle = energyColor;
+            ctx.fillRect(barX, barY, barWidth * energyPercent, barHeight);
+        }
+
+        // Special rendering based on type
+        if (this.cellType === 'photosynthetic') {
+            this.renderPhotosynthetic(ctx);
+        } else if (this.cellType === 'predator') {
+            this.renderPredator(ctx);
+        }
+    }
+
+    getCellPositions() {
+        const positions = [];
+        const angleStep = (Math.PI * 2) / this.cellCount;
+
+        for (let i = 0; i < this.cellCount; i++) {
+            const angle = i * angleStep;
+            const distance = this.radius * 0.5;
+            positions.push({
+                x: this.x + Math.cos(angle) * distance,
+                y: this.y + Math.sin(angle) * distance
+            });
+        }
+
+        return positions;
+    }
+
+    renderPhotosynthetic(ctx) {
+        // Draw photosynthetic organelles around the perimeter
+        ctx.fillStyle = 'rgba(76, 175, 80, 0.6)';
+        for (let i = 0; i < this.cellCount * 2; i++) {
+            const angle = (i / (this.cellCount * 2)) * Math.PI * 2;
+            const x = this.x + Math.cos(angle) * this.radius * 0.7;
+            const y = this.y + Math.sin(angle) * this.radius * 0.7;
+            ctx.beginPath();
+            ctx.arc(x, y, 3, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    }
+
+    renderPredator(ctx) {
+        // Draw spikes/teeth
+        ctx.strokeStyle = 'rgba(255,255,255,0.7)';
+        ctx.lineWidth = 2;
+        const spikeCount = this.cellCount * 3;
+        for (let i = 0; i < spikeCount; i++) {
+            const angle = (i / spikeCount) * Math.PI * 2;
+            const innerRadius = this.radius * 0.6;
+            const outerRadius = this.radius;
+
+            ctx.beginPath();
+            ctx.moveTo(
+                this.x + Math.cos(angle) * innerRadius,
+                this.y + Math.sin(angle) * innerRadius
+            );
+            ctx.lineTo(
+                this.x + Math.cos(angle) * outerRadius,
+                this.y + Math.sin(angle) * outerRadius
+            );
+            ctx.stroke();
+        }
+    }
+}
+
 // ==================== PARTICLE ====================
 
 class Particle {
@@ -839,6 +1219,11 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('speedValue').textContent = e.target.value;
     });
 
+    document.getElementById('combineChanceSlider').addEventListener('input', (e) => {
+        simulation.combinationChance = parseInt(e.target.value) / 100;
+        document.getElementById('combineChanceValue').textContent = e.target.value;
+    });
+
     document.getElementById('showEnergy').addEventListener('change', (e) => {
         simulation.showEnergy = e.target.checked;
     });
@@ -881,6 +1266,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function updateStats() {
     document.getElementById('cellCount').textContent = simulation.cells.length;
+    document.getElementById('organismCount').textContent = simulation.organisms.length;
     document.getElementById('plantCount').textContent = simulation.plants.length;
     document.getElementById('treeCount').textContent = simulation.trees.length;
     document.getElementById('fps').textContent = simulation.fps;
