@@ -26,15 +26,17 @@ An interactive 2D simulation featuring cells with different behaviors and growin
 - Have spikes/teeth visual features
 - Consume other cells on contact
 
-#### 4. Organisms (Multi-cell)
-- Formed when cells of the same type combine
-- Combination occurs with configurable chance (default 10%)
-- Larger size based on number of cells combined
-- Display cell count badge
-- Inherit behaviors from component cell type
-- More energy and stronger than single cells
-- Can reproduce to create new organisms
-- Individual cells visible within membrane
+#### 4. Organisms (Multi-cell Clusters)
+- Formed when cells of the same type attach together
+- Attachment occurs with configurable chance (default 10%)
+- Cells remain distinct and visibly connected
+- Connected by visible bond lines (attachment points)
+- Display cell count badge at cluster center
+- Move together as coordinated group
+- Spring physics keeps cells connected
+- Cells can attach to existing organisms to grow them
+- Each cell maintains individual energy and properties
+- More powerful than single cells due to coordination
 
 ### Plant Life
 
@@ -70,13 +72,17 @@ An interactive 2D simulation featuring cells with different behaviors and growin
 - Reproduction costs 40% of max energy
 - Offspring spawn near parent with slight variation
 
-### Cell Combination (Game of Life Inspired)
-- Cells of the same type can combine into organisms
-- Combination chance is adjustable (1-100%, default 10%)
-- Only non-predator cells can combine
-- Combined organisms are larger and more powerful
-- Properties scale with cell count
-- Creates particle effects when combining
+### Cell Attachment (Game of Life Inspired)
+- Cells of the same type can attach into organisms
+- Attachment chance is adjustable (1-100%, default 10%)
+- Only non-predator cells can attach
+- Cells remain visually distinct in clusters
+- Visible connection bonds between attached cells
+- Spring physics maintains organism cohesion
+- Group movement through coordinated forces
+- Cells can join existing organisms to grow them
+- Properties distributed across all cells
+- Creates particle effects when attaching
 
 ### Collisions
 - Cells bounce off each other
@@ -104,7 +110,7 @@ An interactive 2D simulation featuring cells with different behaviors and growin
 
 ### Settings
 - **Simulation Speed**: Adjust from 0.1x to 27.0x (extreme speed!)
-- **Combination Chance**: Control how likely cells combine (1-100%)
+- **Attachment Chance**: Control how likely cells attach (1-100%)
 - **Show Energy Bars**: Toggle energy visualization
 - **Show Cell Trails**: Toggle movement trails (future feature)
 
