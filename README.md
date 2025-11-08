@@ -26,6 +26,16 @@ An interactive 2D simulation featuring cells with different behaviors and growin
 - Have spikes/teeth visual features
 - Consume other cells on contact
 
+#### 4. Organisms (Multi-cell)
+- Formed when cells of the same type combine
+- Combination occurs with configurable chance (default 10%)
+- Larger size based on number of cells combined
+- Display cell count badge
+- Inherit behaviors from component cell type
+- More energy and stronger than single cells
+- Can reproduce to create new organisms
+- Individual cells visible within membrane
+
 ### Plant Life
 
 #### Plants
@@ -60,6 +70,14 @@ An interactive 2D simulation featuring cells with different behaviors and growin
 - Reproduction costs 40% of max energy
 - Offspring spawn near parent with slight variation
 
+### Cell Combination (Game of Life Inspired)
+- Cells of the same type can combine into organisms
+- Combination chance is adjustable (1-100%, default 10%)
+- Only non-predator cells can combine
+- Combined organisms are larger and more powerful
+- Properties scale with cell count
+- Creates particle effects when combining
+
 ### Collisions
 - Cells bounce off each other
 - Predators consume prey on contact
@@ -85,7 +103,8 @@ An interactive 2D simulation featuring cells with different behaviors and growin
 - Plants/trees only spawn near ground
 
 ### Settings
-- **Simulation Speed**: Adjust from 0.1x to 3.0x
+- **Simulation Speed**: Adjust from 0.1x to 27.0x (extreme speed!)
+- **Combination Chance**: Control how likely cells combine (1-100%)
 - **Show Energy Bars**: Toggle energy visualization
 - **Show Cell Trails**: Toggle movement trails (future feature)
 
